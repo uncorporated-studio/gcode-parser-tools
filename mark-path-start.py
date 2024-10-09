@@ -3,7 +3,7 @@ from pygcode import Line
 
 # Path to your G-code file
 input_file = 'test.gcode'
-output_file = f'modified-{os.path.splitext(os.path.basename(__file__))[0]}.gcode'
+output_file = f"{os.path.splitext(os.path.basename(input_file))[0]}-{os.path.splitext(os.path.basename(__file__))[0]}.gcode"
 
 def modify_gcode(input_file, output_file):
     # Read all lines from the input file

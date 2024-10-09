@@ -1,8 +1,8 @@
 import os
 
 # Path to your G-code file
-input_file = 'test.gcode'
-output_file = f'modified-{os.path.splitext(os.path.basename(__file__))[0]}.gcode'
+input_file = 'drawing (10).gcode'
+output_file = f"{os.path.splitext(os.path.basename(input_file))[0]}-{os.path.splitext(os.path.basename(__file__))[0]}.gcode"
 
 def modify_gcode_with_height(input_file, output_file, steps, decrement):
     # Read all lines from the input file
@@ -18,32 +18,46 @@ def modify_gcode_with_height(input_file, output_file, steps, decrement):
         f_out.writelines(start_lines)
         
         current_step = 0
-        current_z = 0.0  # Starting Z height (adjust as needed)
+        current_travel_z = None  # Initialize to track travel height based on input
+        current_drawing_z = 0.0  # Initial drawing height (Z0)
 
         # Process only the middle section (4th to second-to-last line) for modification
         for line in lines[3:-1]:
-            # Check if the line is a G1 with a Z parameter
             if 'G1' in line and 'Z' in line:
-                # Adjust Z height every specified number of steps
+                # Determine whether the Z command is a drawing or travel height
+                z_value = None
+                for part in line.split():
+                    if part.startswith('Z'):
+                        z_value = float(part[1:])  # Extract the numerical Z value
+                
+                # Initialize the current travel height based on the first encountered travel height (if not already done)
+                if current_travel_z is None and z_value is not None and z_value > 0:
+                    current_travel_z = z_value
+                
+                # Adjust Z for both travel and drawing moves
                 if current_step == steps:
-                    current_z -= decrement
+                    current_travel_z -= decrement
+                    current_drawing_z -= decrement
                     current_step = 0
                 else:
                     current_step += 1
 
-                # Update the Z parameter in the line
+                # Modify the Z value in the line accordingly
                 parts = line.split()
                 new_parts = []
                 
                 for part in parts:
                     if part.startswith('Z'):
-                        part = f'Z{current_z:.2f}'
+                        if z_value == 0:  # Drawing height adjustment
+                            part = f'Z{current_drawing_z:.2f}'
+                        else:  # Travel height adjustment
+                            part = f'Z{current_travel_z:.2f}'
                     new_parts.append(part)
 
                 modified_line = ' '.join(new_parts)
                 f_out.write(modified_line + '\n')
             else:
-                # Write any line as-is if it doesn't match the criteria for modification
+                # Write non-Z lines as-is
                 f_out.write(line)
 
         # Write the last line from the original file without modification
@@ -51,7 +65,7 @@ def modify_gcode_with_height(input_file, output_file, steps, decrement):
 
 # Parameters for height control
 steps = 10  # Number of steps to adjust Z height
-decrement = 0.5  # Amount to lower Z each interval
+decrement = 0.02  # Amount to lower Z each interval
 
-# Run the function to modify G-code with height control and specific line retention
+# Run the function to modify G-code with consistent Z adjustment
 modify_gcode_with_height(input_file, output_file, steps, decrement)
