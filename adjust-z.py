@@ -1,7 +1,7 @@
 import os
 
 # Path to your G-code file
-input_file = 'drawing (10).gcode'
+input_file = 'drawing (7).gcode'
 output_file = f"{os.path.splitext(os.path.basename(input_file))[0]}-{os.path.splitext(os.path.basename(__file__))[0]}.gcode"
 
 def modify_gcode_with_height(input_file, output_file, steps, decrement):
